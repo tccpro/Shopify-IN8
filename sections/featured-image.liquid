@@ -1,0 +1,437 @@
+<style>
+  #Banner-{{ section.id }} {
+    margin-top: {{ section.settings.top_space_size }}px;
+    margin-bottom: {{ section.settings.bottom_space_size }}px;
+  }
+  @media screen and (max-width: 749px) {
+    #Banner-{{ section.id }} {
+      margin-top: {{ section.settings.top_space_size | divided_by : 2 }}px;
+      margin-bottom: {{ section.settings.bottom_space_size | divided_by : 2 }}px;
+    }
+    #Banner-{{ section.id }} {
+      height : {{ section.settings.mobile_height }};
+      position : relative
+    }
+    #Banner-{{ section.id }} .banner__media {
+      height : {{ section.settings.mobile_height }};
+    }
+    #Banner-{{ section.id }} .banner_img {
+      /* height : {{ section.settings.mobile_height }}; */
+      width: auto;
+    }
+    #Banner-{{ section.id }} .banner_img {
+      margin: 0px;
+    }
+    #Banner-{{ section.id }} .banner__heading h1 {
+      
+    }
+  }
+  #Banner-{{ section.id }}::after {
+    opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};
+  }
+  
+</style>
+
+
+<div id="Banner-{{ section.id }}" 
+class="banner featured_image_banner banner--{{ section.settings.image_height }} {% if section.settings.enable_parallax == true%} js-parallax-elm-box {% endif %}" 
+>
+  
+  {%- if section.settings.image != blank -%}
+    
+    <div class="banner__media featured_banner media{% if section.settings.image == blank %} placeholder{% endif %} 
+    {% if section.settings.enable_parallax == true %} js-parallax-elm {% endif %}
+    
+    img-position-{% if section.settings.img_position != blank and section.settings.image_height != 'Original' and section.settings.enable_parallax == true%}{{section.settings.img_position}}{% endif %}" 
+    >
+      <img class="banner_img"
+        srcset="{{ section.settings.image | img_url: 'master' }} "
+        src="{{ section.settings.image | img_url: 'master' }}"
+        loading="lazy"
+        alt="{{ section.settings.image.alt | escape }}"
+        {% if section.settings.image_2 != blank %}class="banner__media-image-half"{% endif %}
+        {% if section.settings.enable_parallax == true %}  {% endif %}
+        {% if section.settings.image_height == 'Original' %}
+          height="{{ section.settings.image.height }}"
+        {% endif %}
+      >
+    </div>
+    <!-- <div class="overlay"></div> -->
+  {%- else -%}
+    <div class="banner__media media {% if section.settings.image == blank %} placeholder{% endif %}">
+      {{ 'lifestyle-2' | placeholder_svg_tag: 'placeholder-svg' }}
+    </div>
+  {%- endif -%}
+  <div class="banner__content featured_banner_content banner__content_position page-width featured-image__content-{{ section.settings.content_alignment }}">
+    <div class="featured_content_inner featured_color_{{section.settings.text_color}} " >
+      {%- if section.settings.heading != blank -%}      
+        <h2 class="featured_banner__heading">
+          {{ section.settings.heading | escape }}
+        </h2>
+      {%- endif -%}
+      {%- if section.settings.sub_heading != blank -%}
+        <div class="featured_banner__text">
+          <span>{{ section.settings.sub_heading | escape }}</span>
+        </div>
+      {%- endif -%}
+      {%- if section.settings.button_label != blank -%}
+        <a role="link" href="{{ section.settings.button_link }}" class="featured_banner__buttons featured_button_{{ section.settings.button_style }} ">{{ section.settings.button_label | escape }}</a>
+      {%- endif -%} 
+    </div>
+  </div>
+</div>
+<script>
+  //パララックス呼び出し
+parallax();
+
+//Intersection Observer + Scroll Event Parallax Vanilla JS
+function parallax() {
+'use strict';
+
+//class設定
+//表示エリア class
+const targetClass = '.js-parallax-elm-box';
+//動かす要素 class
+const childClass = '.js-parallax-elm';
+
+//表示エリア取得
+const targets = Array.prototype.slice.call(document.querySelectorAll(targetClass),0);
+//表示エリアが存在するかチェック
+if(targets.length === 0) {
+  return false;
+}
+
+//ウィンドウの高さ取得
+let winH = window.innerHeight;
+window.addEventListener('resize', function(){
+  winH = window.innerHeight;
+});
+
+//observer設定
+let observer = new IntersectionObserver(observerFunc, {
+  root: null,
+  rootMargin: '0px',
+  threshold: 0
+});
+
+//初期設定
+let setListener =  [];
+targets.forEach((target,index) => {
+  //Listener設定取得用の判別番号をセット
+  target.setAttribute('data-index',index);
+  //scrollイベントへ渡すlistener設定
+  setListener.push(
+    {
+      target: target,
+      handleEvent: function handleEvent () {
+        parallaxFunk(target);
+      }
+    }
+  );
+  //初期表示の位置調整
+  parallaxFunk(target);
+  //observer監視開始
+  observer.observe(target);
+});
+
+//observer処理
+function observerFunc(entries) {
+  entries.forEach(entry => {
+    //listener設定取得
+    const listener =  setListener[entry.target.getAttribute('data-index')];
+    if(entry.isIntersecting) {
+      //画面に表示されている要素のみスクロールイベントへ追加
+      window.addEventListener('scroll', listener, false);
+    } else {
+      //画面外のときはスクロールイベント削除
+      window.removeEventListener('scroll', listener, false);
+    }
+  });
+}
+
+//パララックス位置調整関数
+function parallaxFunk(target) {
+    //動かす要素を取得
+    const child = target.querySelector(childClass);
+    //動かす要素が存在するかチェック
+    if(!child) {
+      return false;
+    }
+
+    //スクロール量（ウィンドウの上端）取得
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    //スクロール量（ウィンドウの下端）取得
+    const scrollBottom = scrollTop + winH;
+
+    //表示エリアの位置取得
+    const targetPosi =  target.getBoundingClientRect().top + scrollTop;
+    //表示エリアの高さ取得
+    const targetHeight =  target.clientHeight;
+    
+    //動かす要素の高さ取得
+    const childHeight = child.clientHeight;
+    //パララックス スクロールできる最大量を取得
+    const maxVal = childHeight - targetHeight;
+    //ウィンドウの高さに対するスクロール量を取得（小数点第2以下は四捨五入）
+    const setVal = ((scrollBottom - targetPosi)*0.3).toFixed(1);
+    child.style.transform = 'translate3d(0,'+(-Math.min(setVal,maxVal))+'px,0)';
+    // console.log(setVal);
+    // console.log(scrollBottom + ' ' + targetPosi + ' ' + maxVal + ' ' + winH + ' ' + targetHeight); 
+    // console.log(setVal);
+    // console.log(child);
+    //スクロール値を設定
+    // const setVal = ((scrollBottom - targetPosi) * (maxVal/(winH+targetHeight))).toFixed(1);
+}
+}
+
+</script>
+{% schema %}
+{
+  "name": "Featured Image",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "image_height",
+      "options": [
+        {
+          "value": "Full",
+          "label": "Full Screen"
+        },
+        {
+          "value": "Original",
+          "label": "Original"
+        },
+        {
+          "value": "lg",
+          "label": "750px"
+        },
+        {
+          "value": "md",
+          "label": "650px"
+        },
+        {
+          "value": "sm",
+          "label": "550px"
+        },
+        {
+          "value": "xs",
+          "label": "450px"
+        }
+      ],
+      "default": "Full",
+      "label": "Height on Desktop"
+    },
+    {
+      "type": "select",
+      "id": "mobile_height",
+      "options": [
+        {
+          "value": "100vh",
+          "label": "Full Screen"
+        },
+        {
+          "value": "auto",
+          "label": "Original"
+        },
+        {
+          "value": "550px",
+          "label": "550px"
+        },
+        {
+          "value": "450px",
+          "label": "450px"
+        },
+        {
+          "value": "350px",
+          "label": "350px"
+        },
+        {
+          "value": "250px",
+          "label": "350px"
+        }
+      ],
+      "default": "450px",
+      "label": "Height on Mobile"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "options": [
+        {
+          "value": "top-left",
+          "label": "Top Left"
+        },
+        {
+          "value": "top-center",
+          "label": "Top Center"
+        },
+        {
+          "value": "top-right",
+          "label": "Top Right"
+        },
+        {
+          "value": "middle-center",
+          "label": "Center"
+        },
+        {
+          "value": "bottom-left",
+          "label": "Bottom Left"
+        },
+        {
+          "value": "bottom-center",
+          "label": "Bottom Center"
+        },
+        {
+          "value": "bottom-right",
+          "label": "Bottom Right"
+        }
+      ],
+      "default": "bottom-center",
+      "label": "Content alignment"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_parallax",
+      "default": true,
+      "label": "Enable parallax"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "IMAGE"
+    },
+    {
+      "type": "select",
+      "id": "img_position",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        }
+      ],
+      "default": "center",
+      "label": "Position"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "step": 5,
+      "max": 100,
+      "default": 10,
+      "unit": "%"
+    },
+    {
+      "type": "header",
+      "content": "Text"
+    },
+    {
+      "type": "select",
+      "id": "text_color",
+      "options": [
+        {
+          "value": "white",
+          "label": "Light"
+        },
+        {
+          "value": "black",
+          "label": "Dark"
+        }
+      ],
+      "default": "white",
+      "label": "Color"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Award winning selection"
+    },
+    {
+      "type": "textarea",
+      "id": "sub_heading",
+      "label": "SubHeading"
+    },
+    {
+      "type": "header",
+      "content": "BUTTON"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Text",
+      "default": "Learn More"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "link"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "options": [
+        {
+          "value": "primary",
+          "label": "Primary"
+        },
+        {
+          "value": "secondary",
+          "label": "Secondary"
+        }
+      ],
+      "default": "primary",
+      "label": "Style"
+    },
+    {
+      "type": "range",
+      "id": "top_space_size",
+      "label": "Top space",
+      "min": 0,
+      "step": 5,
+      "max": 150,
+      "default": 60,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "bottom_space_size",
+      "label": "Bottom space",
+      "min": 0,
+      "step": 5,
+      "max": 150,
+      "default": 60,
+      "unit": "px"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured Image"
+    }
+  ]
+}
+{% endschema %}
+    
